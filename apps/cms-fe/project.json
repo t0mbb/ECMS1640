@@ -1,0 +1,13 @@
+{
+  "name": "cms-fe",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/cms-fe/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "docker-build": {
+      "dependsOn": ["build"],
+      "command": "docker build -f apps/cms-fe/Dockerfile . -t cms-fe"
+    }
+  }
+}

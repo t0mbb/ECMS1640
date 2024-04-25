@@ -1,0 +1,49 @@
+
+.demo-logo-vertical {
+  height: 40px;
+
+  background: #fff; 
+  margin: 20px;
+  margin-bottom: 250px;
+  background: url('../image/cms1.jpg'); 
+  background-size: contain;
+
+  
+}
+
+@media (max-width: 768px) {
+  .demo-logo-vertical {
+    display: none; 
+  }
+}
+
+@media (min-width: 768px) {
+  .demo-logo-vertical {
+    display: block; 
+  }
+}
+
+.Content {
+margin: 24px 16px;
+padding : 24px;
+min-Height: auto;
+min-width: auto;
+
+border-radius:12px;
+letter-spacing: 1px;
+border: 1.5px solid #92bdff
+}
+.btn-header{
+
+}
+.menu-side-bar{
+
+padding: 4px;
+
+background-color: #141414;
+border-radius:20px;
+letter-spacing: 1px;
+border : 0.3px solid ;
+}
+
+

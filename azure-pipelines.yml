@@ -1,0 +1,102 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+variables:
+  system.debug: 'true'
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs: 
+  - job: BuildJob
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: 20.x
+      displayName: Install Node.js 20
+
+    - script: |
+        set -e
+        npm ci
+        npm i -g nx
+      displayName: Install dependencies
+
+    - script: |
+        set -e
+        nx run-many --targets=build
+        cp package.json package-lock.json dist/apps/cms
+        cd dist/apps/cms
+        npm ci --omit=dev
+      displayName: Build application
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: dist/apps/cms
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/cms-be_$(Build.BuildId).zip
+        replaceExistingArchive: true
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: dist/apps/cms-fe
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/cms-fe_$(Build.BuildId).zip
+        replaceExistingArchive: true
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: cms
+
+- stage: Deploy_Backend
+  displayName: Deploy Backend stage
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+    - deployment: DeploymentJob
+      environment: cms-1640
+      pool:
+        vmImage: ubuntu-latest
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureRmWebAppDeployment@4
+              displayName: 'Back-end Deploy'
+              inputs:
+                azureSubscription: cms1640
+                appType: webAppLinux
+                WebAppName: cms1640-be
+                RuntimeStack: 'NODE|20-lts'
+                packageForLinux: $(Pipeline.Workspace)/**/cms-be_$(Build.BuildId).zip
+                StartupCommand: 'node main.js'
+
+- stage: Deploy_Frontend
+  displayName: Deploy Frontend stage
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+    - deployment: DeploymentJob
+      environment: cms-1640
+      pool:
+        vmImage: ubuntu-latest
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureRmWebAppDeployment@4
+              displayName: 'Front-end Deploy'
+              inputs:
+                azureSubscription: cms1640
+                appType: webApp
+                WebAppName: cms1640-fe
+                RuntimeStack: 'NODE|20-lts'
+                packageForLinux: $(Pipeline.Workspace)/**/cms-fe_$(Build.BuildId).zip
+                StartupCommand: 'pm2 serve /home/site/wwwroot --no-daemon'
